@@ -1,9 +1,11 @@
+#include "FreeRTOS.h"
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include "FreeRTOS.h"
+#include "pico/stdlib.h"
 #include "task.h"
 #include "command.h"
+#include "boot.h"
 
 // Define a struct for command dictionary entries
 typedef struct {
@@ -17,6 +19,7 @@ Command commands[] = {
     {"echo", echo},
     {"ver", ver},
     {"clear", clear},
+    {"bin", bin},
     {NULL, NULL} // Sentinel value to mark the end of the array
 };
 
@@ -24,6 +27,7 @@ Command commands[] = {
 void help(char *args) {
     printf("available commands:\n");
     printf("    echo <argument>: prints back the argument\n");
+    printf("    bin <number>: display number in binary on LED's\n");
     printf("    clear: clear the screen\n");
     printf("    ver: display installed version\n");
     printf("    exit: shutdown the OS\n");
@@ -48,6 +52,23 @@ void ver(char *args) {
     printf("kyblRTOS Indev 0.1.12\n");
     }
 }
+
+void bin(char *args) {
+    int number = atoi(args);
+
+    if(number < 0 || number > 15){
+        printf("error: number must be 0 - 15");
+        return;
+    }
+
+    gpio_put(GPIO15, (number & (1 << 3)) ? 1 : 0); // MSB - GPIO15
+    gpio_put(GPIO14, (number & (1 << 2)) ? 1 : 0);
+    gpio_put(GPIO13, (number & (1 << 1)) ? 1 : 0);
+    gpio_put(GPIO12, (number & (1 << 0)) ? 1 : 0); // LSB - GPIO12
+
+    printf("executed.");
+}
+
 
 // Execute command
 int execute_command(const char *command, char *args) {

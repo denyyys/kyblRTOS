@@ -8,6 +8,7 @@ void help();
 void echo(char *text);
 void clear();
 void ver();
+void bin();
 int execute_command(const char *command, char *args);
 
 #endif

@@ -1,6 +1,7 @@
 add_executable(${ProjectName}
     main.c
     command.c
+    boot.c
 )
 
 target_include_directories(${ProjectName} PRIVATE

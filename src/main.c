@@ -3,45 +3,39 @@
 #include <stdio.h>
 #include "pico/stdlib.h"
 #include "command.h"
+#include "boot.h"
+#include "queue.h"
 
-void serial_test()
+QueueHandle_t led_queue;
+
+int boot_success = 0;
+
+void status_led(void *pvParameters)
 {
-    const uint LED_BLUE = 26;
-    gpio_set_dir(LED_BLUE, GPIO_OUT);
-
-    while (1){
-        printf("hulpero\n");
-        gpio_put(LED_BLUE, 1);
-        vTaskDelay(1500);
-        gpio_put(LED_BLUE, 0);
-        vTaskDelay(1500);
-    }
-}
-
-TaskHandle_t blue_led_task_handle = NULL;
-
-void blue_action_led(void *pvParameters){
-
-    printf("[debug: BLUE LED task started]\n");
-    fflush(stdout);
-
-    const uint LED_BLUE = 26;
-    gpio_init(LED_BLUE);
-    gpio_set_dir(LED_BLUE, GPIO_OUT);
-
     while (1) {
-        ulTaskNotifyTake(pdTRUE, portMAX_DELAY);
-
-        gpio_put(LED_BLUE, 1);
-        vTaskDelay(100); 
-        gpio_put(LED_BLUE, 0);
-        printf("[debug: BLUE LED blinked]\n");
-        fflush(stdout);
+        while (1) {
+        char command[MAX_INPUT_LENGTH];
+        
+        // wait for commands from other tasks
+        if (xQueueReceive(led_queue, command, portMAX_DELAY)) {
+            if (strcmp(command, "enter") == 0) {
+                gpio_put(LED_BLUE, 1); 
+                vTaskDelay(pdMS_TO_TICKS(100));
+                gpio_put(LED_BLUE, 0);
+            } else if(strcmp(command, "boot_ok") == 0) {
+                gpio_put(LED_GREEN, 1);
+                vTaskDelay(pdMS_TO_TICKS(3000));
+                gpio_put(LED_GREEN, 0);
+            } else if(strcmp(command, "boot_error") == 0) {
+                gpio_put(LED_RED, 1);
+            }
+        }
     }
 }
+}
 
-void input_task(void *pvParameters) {
-
+void input_task(void *pvParameters) 
+{
     char input[MAX_INPUT_LENGTH];
     int input_pos = 0;
 
@@ -50,6 +44,7 @@ void input_task(void *pvParameters) {
 
         if (ch != PICO_ERROR_TIMEOUT) {
             if (ch == '\r' || ch == '\n') {
+                xQueueSendToBack(led_queue, "enter", portMAX_DELAY); // send command to blue_action_led task
                 if (input_pos > 0) {
                     input[input_pos] = '\0';
 
@@ -62,16 +57,8 @@ void input_task(void *pvParameters) {
                         if (strcmp(command, "exit") == 0) {
                             break;
                         }
-
-                    // Notify BLUE LED task to blink
-                    if (blue_led_task_handle != NULL) {
-                        printf("[debug: Sending notification to BLUE LED task]\n");
-                        fflush(stdout);
-                        xTaskNotifyGive(blue_led_task_handle);
-                    } else {
-                        printf("[debug: BLUE LED task handle is NULL]\n");
-                        fflush(stdout);
-                    }
+                     
+            
                         // Execute the command
                         if (!execute_command(command, arguments)) {
                             printf("unknown command.\n");
@@ -101,10 +88,25 @@ int main()
 {
     stdio_init_all();
 
-    xTaskCreate(input_task, "INPUT_Task", 256, NULL, 1, NULL);
-    xTaskCreate(blue_action_led, "Blue_LED_Task", 256, NULL, 1, NULL);
+   boot();
 
-    //xTaskCreate(serial_test, "serial test", 256, NULL, 1, NULL);
+   /*
+   if(boot_success = 0){
+    xQueueSendToBack(led_queue, "boot_error", portMAX_DELAY);
+   } else {
+    xQueueSendToBack(led_queue, "boot_ok", portMAX_DELAY);
+   }
+   */
+
+    led_queue = xQueueCreate(10, sizeof(char[MAX_INPUT_LENGTH]));
+    if (led_queue == NULL) {
+        printf("[debug: Failed to create input queue]\n");
+        return 1;
+    }
+
+    xTaskCreate(input_task, "INPUT_Task", 256, NULL, 1, NULL);
+    xTaskCreate(status_led, "Status_LED_Task", 256, NULL, 1, NULL);
+
 
     vTaskStartScheduler();
 
