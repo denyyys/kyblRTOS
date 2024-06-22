@@ -22,3 +22,7 @@ RP2040 Real-Time Operating system built on top of freeRTOS Kernel
 ## Description and Features
 
 - WIP
+
+p.s 
+- cekam na novou desku asi jsem si ji odpalil kdyz sem posilal na gpio a mel blbe zapojene nepajivko
+- takze updaty zatim pass
