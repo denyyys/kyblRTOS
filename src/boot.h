@@ -13,9 +13,16 @@
 #define LED_RED 27
 #define LED_GREEN 28
 
-#include "pico/stdlib.h"
+//
+#define QUEUE_LENGTH 10
+#define ITEM_SIZE sizeof(char[50])
 
-void boot();
+#include "pico/stdlib.h"
+#include "hardware/i2c.h"
+#include "pico/binary_info.h"
+
+int boot();
 void LED_init();
+void LCD_init_boot();
 
 #endif

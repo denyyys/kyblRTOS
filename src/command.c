@@ -4,8 +4,11 @@
 #include <string.h>
 #include "pico/stdlib.h"
 #include "task.h"
+#include "queue.h"
 #include "command.h"
 #include "boot.h"
+
+extern QueueHandle_t lcd_queue;
 
 // Define a struct for command dictionary entries
 typedef struct {
@@ -20,12 +23,14 @@ Command commands[] = {
     {"ver", ver},
     {"clear", clear},
     {"bin", bin},
+    {"lcd", lcd_command},
     {NULL, NULL} // Sentinel value to mark the end of the array
 };
 
 // Function implementations
 void help(char *args) {
     printf("available commands:\n");
+    printf("    lcd <argument>: [lcd 'message'] / [lcd stop]");
     printf("    echo <argument>: prints back the argument\n");
     printf("    bin <number>: display number in binary on LED's\n");
     printf("    clear: clear the screen\n");
@@ -49,7 +54,7 @@ void ver(char *args) {
     if(args != NULL && strcmp(args,"skero") == 0){
         printf("hulim hhc rn\n");
     } else {
-    printf("kyblRTOS Indev 0.1.12\n");
+    printf("kyblRTOS Indev 0.2.4\n");
     }
 }
 
@@ -67,6 +72,23 @@ void bin(char *args) {
     gpio_put(GPIO12, (number & (1 << 0)) ? 1 : 0); // LSB - GPIO12
 
     printf("executed.");
+}
+
+void lcd_command(char *args) {
+
+    if (args != NULL) {
+        char message[50];
+        snprintf(message, sizeof(message), "%s", args);
+
+        // Check if the command is to stop the loop
+        if (strcmp(message, "stop") == 0) {
+            xQueueSend(lcd_queue, &message, portMAX_DELAY); // Send "stop" command
+        } else {
+            xQueueSend(lcd_queue, &message, portMAX_DELAY); // Send user message to display
+        }
+    } else {
+        printf("Invalid command or no arguments provided.\n");
+    }
 }
 
 
