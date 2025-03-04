@@ -3,7 +3,7 @@
 RP2040 Real-Time Operating system built on top of freeRTOS Kernel
 - **current version:** Indev 0.2.4
 
-![kyblrtos_pic](kyblRTOS_pic.png)
+![kyblrtos_pic](version.jpg)
 
 ## Hardware
 - Raspberry Pi Pico / W
