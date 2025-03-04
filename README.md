@@ -1,7 +1,7 @@
 # kyblRTOS
 
 RP2040 Real-Time Operating system built on top of freeRTOS Kernel
-- **current version:** Indev 0.2.4
+- **current version:** Indev 0.2.43
 
 ![kyblrtos_pic](version.jpg)
 
